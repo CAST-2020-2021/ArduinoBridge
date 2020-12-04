@@ -1,5 +1,8 @@
 const fs = require('fs')
-const dir = '/readings/'
+const dir = './readings/'
+const autosaveDir = './autosavereadings/'
+
+const { remote } = require ('electron');
 
 const SerialPort = require('serialport')
 
@@ -25,13 +28,26 @@ parser.on('data', line => {
     document.getElementById('messages').innerHTML = tableify(counts);
 })
 
-function SaveReading() {
+function SaveReading(autoSave = false) {
     let num = 0;
-    let fileName = "reading.json"
+    let localDir;
+    if (autoSave) {
+        localDir = autosaveDir
+    }
+    else {
+        localDir = dir;
+    }
+    if (!fs.existsSync(localDir)){
+        fs.mkdirSync(localDir);
+    }
+    let fileName =localDir+ "reading.json"
     while (fs.existsSync(fileName)) {
         num++;
-        fileName = "reading"+num+".json"
+        fileName = localDir+"reading" + num + ".json"
     }
     fs.writeFileSync(fileName, JSON.stringify(counts));
+    console.log(fileName);
 
 }
+
+setInterval(SaveReading, 1000, true);
