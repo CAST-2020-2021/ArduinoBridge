@@ -2,7 +2,7 @@ const fs = require('fs')
 const dir = './readings/'
 const autosaveDir = './autosavereadings/'
 
-const { remote } = require ('electron');
+var Chart = require('chart.js');
 
 const SerialPort = require('serialport')
 
@@ -16,7 +16,31 @@ const port = new SerialPort(path, { baudRate: 9600 })
 
 document.getElementById('comPorts').innerHTML = path;
 
+
+
 counts = []
+countXonly = []
+xMax = 0;
+var c = document.getElementById('myChart')
+var ctx = c.getContext('2d');
+var myLineChart = Chart.Line(ctx, {
+    data: {
+        datasets: [{
+            data: [],
+        },
+        ]
+    },
+    options:{
+        steppedLine: true,
+    }
+});
+
+window.webContents= function(){
+    console.log(c)
+    c.width = 10;
+    c.height = 10;
+};
+
 
 const parser = new Readline()
 port.pipe(parser)
@@ -26,6 +50,13 @@ parser.on('data', line => {
     let current_time = new Date();
     counts.push([parseInt(line), current_time.toUTCString()]);
     document.getElementById('messages').innerHTML = tableify(counts);
+    if (!isNaN(line)) {
+        xMax++;
+        myLineChart.data.datasets[0].data.push(parseInt(line))
+        myLineChart.data.labels.push()
+        console.log(myLineChart.data.labels.push(xMax))
+        myLineChart.update()
+    }
 })
 
 function SaveReading(autoSave = false) {
@@ -37,17 +68,18 @@ function SaveReading(autoSave = false) {
     else {
         localDir = dir;
     }
-    if (!fs.existsSync(localDir)){
+    if (!fs.existsSync(localDir)) {
         fs.mkdirSync(localDir);
     }
-    let fileName =localDir+ "reading.json"
+    let fileName = localDir + "reading.json"
     while (fs.existsSync(fileName)) {
         num++;
-        fileName = localDir+"reading" + num + ".json"
+        fileName = localDir + "reading" + num + ".json"
     }
     fs.writeFileSync(fileName, JSON.stringify(counts));
     console.log(fileName);
 
 }
 
-setInterval(SaveReading, 1000, true);
+setInterval(SaveReading, 10000, true);
+
